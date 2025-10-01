@@ -50,7 +50,11 @@ class Personagem():
     def draw(self):
         tela.blit(self.image, self.rect)
 
-Aragorn = Personagem(200, 260, 'Aragorn', 200, 10, 20)
+Aragorn = Personagem(300, 450, 'Aragorn', 200, 10, 20)
+Sauron = Personagem(900, 450, 'Sauron', 350, 10, 20)
+Nazgul1 = Personagem(1000, 300, 'Nazgûl', 150, 10, 20)
+Nazgul2 = Personagem(1000, 550, 'Nazgûl', 150, 10, 20)
+
 
 #Variável para sair do jogo caso atinja condição para ser falsa
 rodando = True
@@ -68,6 +72,10 @@ while rodando:
 
     #Faz um personagem
     Aragorn.draw()
+    Sauron.draw()
+    Nazgul1.draw()
+    Nazgul2.draw()
+
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:

@@ -43,17 +43,26 @@ class Personagem():
         self.defesa = defesa
         self.alive = True
         img = pygame.image.load(f'imagens/Personagens/{self.nome}/0.png')
-        self.image = pygame.transform.scale(img, (img.get_width() / 6, img.get_height() / 6))
+
+        # Ajustando a altura dos personagens
+        if self.nome == 'Sauron':
+            self.image = pygame.transform.scale(img, (img.get_width() / 3, img.get_height() / 3))
+        elif self.nome == 'Frodo':
+            self.image = pygame.transform.scale(img, (img.get_width() / 9, img.get_height() / 9))
+        else:
+            self.image = pygame.transform.scale(img, (img.get_width() / 6, img.get_height() / 6))
+
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
 
     def draw(self):
         tela.blit(self.image, self.rect)
 
-Aragorn = Personagem(300, 450, 'Aragorn', 200, 10, 20)
-Sauron = Personagem(900, 450, 'Sauron', 350, 10, 20)
-Nazgul1 = Personagem(1000, 300, 'Nazgûl', 150, 10, 20)
-Nazgul2 = Personagem(1000, 550, 'Nazgûl', 150, 10, 20)
+Aragorn = Personagem(350, 430, 'Aragorn', 200, 10, 20)
+Sauron = Personagem(900, 360, 'Sauron', 350, 10, 20)
+Nazgul1 = Personagem(1100, 300, 'Nazgûl', 150, 10, 20)
+Nazgul2 = Personagem(1100, 550, 'Nazgûl', 150, 10, 20)
+#Frodo = Personagem(200, 350, 'Frodo', 200, 10, 20)
 
 
 #Variável para sair do jogo caso atinja condição para ser falsa
@@ -75,6 +84,7 @@ while rodando:
     Sauron.draw()
     Nazgul1.draw()
     Nazgul2.draw()
+    #Frodo.draw()
 
     
     for event in pygame.event.get():

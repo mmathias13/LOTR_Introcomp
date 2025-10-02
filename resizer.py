@@ -2,14 +2,14 @@ from PIL import Image
 
 # --- CONFIGURAÇÕES ---
 # 1. Coloque o nome da sua imagem original aqui
-NOME_ARQUIVO_ORIGINAL = 'imagens/painel/painel.png'
+NOME_ARQUIVO_ORIGINAL = 'imagens/painel/sauron.png'
 
 # 2. Escolha as novas dimensões (ex: 1280x720)
-NOVA_LARGURA = 1280
+NOVA_LARGURA = 600
 NOVA_ALTURA = 200
 
 # 3. Dê um nome para o novo arquivo que será criado
-NOME_ARQUIVO_NOVO = 'imagens/painel/painel_redimensionado.png'
+NOME_ARQUIVO_NOVO = 'imagens/Personagens/Sauron/0.png'
 # ---------------------
 
 try:

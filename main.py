@@ -24,23 +24,38 @@ background_img = pygame.image.load('imagens/Fundo/Battleground1_redimensionado.p
 #Imagem do painel
 painel_img = pygame.image.load('imagens/painel/painel_redimensionado.png').convert_alpha()
 
+#Faz os textos
+def desenha_textos(texto, fonte, texto_cor, x, y):
+     img = fonte.render(texto, True, texto_cor)
+     tela.blit(img, x, y)   
+
+#Definindo as fontes
+fonte = pygame.font.SysFont('Times New Roman', 26)
+
+#Definindo as cores
+vermelho = (255, 0, 0)
+verde = (0, 255, 0)
+
 #Função para criar o background
 def desenha_bg():
     tela.blit(background_img, (0, 0))
     
 #Função para criar o painel
 def desenha_painel():
+    #Faz o retângulo do painel
     tela.blit(painel_img, (0, ALTURA - PAINEL))
-
+    #Mostra os stats dos personagens
+    desenha_textos(f'{Personagem.nome} VIDA: {Personagem.vida_max}', fonte, vermelho, 100, ALTURA - PAINEL + 10)
 # Criação de personagens adiante
 
 #Personagem
 class Personagem():
-    def __init__(self, x, y, nome, vida_max, força, defesa):
+    def __init__(self, x, y, nome, vida_max, força, defesa, velocidade):
         self.nome = nome
         self.vida_max = vida_max
         self.força = força
         self.defesa = defesa
+        self.velocidade = velocidade
         self.alive = True
         img = pygame.image.load(f'imagens/Personagens/{self.nome}/0.png')
 
@@ -58,11 +73,14 @@ class Personagem():
     def draw(self):
         tela.blit(self.image, self.rect)
 
-Aragorn = Personagem(350, 430, 'Aragorn', 200, 10, 20)
-Sauron = Personagem(900, 360, 'Sauron', 350, 10, 20)
-Nazgul1 = Personagem(1100, 300, 'Nazgûl', 150, 10, 20)
-Nazgul2 = Personagem(1100, 550, 'Nazgûl', 150, 10, 20)
-#Frodo = Personagem(200, 350, 'Frodo', 200, 10, 20)
+Aragorn = Personagem(350, 430, 'Aragorn', 250, 30, 25, 12)
+Sauron = Personagem(900, 360, 'Sauron', 450, 50, 30, 10)
+Nazgul1 = Personagem(1100, 300, 'Nazgûl', 180, 28, 20, 16)
+Nazgul2 = Personagem(1100, 550, 'Nazgûl', 180, 28, 20, 16)
+Frodo = Personagem(200, 350, 'Frodo', 120, 10, 15, 20)
+Legolas = Personagem(200, 350, 'Legolas', 160, 42, 15, 18)
+Gandalf = Personagem(200, 350, 'Gandalf', 200, 40, 20, 8)
+
 
 
 #Variável para sair do jogo caso atinja condição para ser falsa
@@ -72,7 +90,7 @@ rodando = True
 while rodando:
     
     clock.tick(fps)
-    
+
     #Faz o background
     desenha_bg()
     
@@ -84,7 +102,7 @@ while rodando:
     Sauron.draw()
     Nazgul1.draw()
     Nazgul2.draw()
-    #Frodo.draw()
+    Frodo.draw()
 
     
     for event in pygame.event.get():

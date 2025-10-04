@@ -45,9 +45,7 @@ def desenha_painel():
     
     # Coluna 2: Turno e Ações
     lutador_da_vez = lista_lutadores[lutador_atual]
-    # --- ALTERAÇÃO APLICADA AQUI ---
-    desenha_textos(f"TURNO DE {lutador_da_vez.nome.upper()}", fonte, branco, 520, ALTURA - 200 + 15) # Era + 30
-
+    desenha_textos(f"TURNO DE {lutador_da_vez.nome.upper()}", fonte, branco, 520, ALTURA - 200 + 15)
     if lutador_da_vez in equipe_do_jogador and estado_batalha == 'selecionando_acao':
         x_acao, y_acao_base = 540, ALTURA - 200 + 60
         desenha_textos('ATACAR', fonte, vermelho, x_acao, y_acao_base)
@@ -63,6 +61,7 @@ def desenha_painel():
         desenha_textos(f'{inimigo.nome.upper()} | VIDA: {int(inimigo.vida)}/{inimigo.vida_max}', fonte, vermelho, 900, ALTURA - 200 + 30 + (i * 50))
 
 def desenha_menu():
+    # ... (sem alterações)
     tela.blit(menu_bg_img, (0, 0))
     desenha_textos('ESCOLHA SUA EQUIPE', fonte_grande, branco, LARGURA // 2 - 350, 100)
     y_pos_herois = 380
@@ -80,15 +79,11 @@ def desenha_menu():
         desenha_textos(heroi.nome, fonte, verde, 400 + i * 180, 750)
 
 class Personagem():
+    # ... (sem alterações)
     def __init__(self, x, y, nome, vida_max, força, defesa, velocidade, escala_img=6):
-        self.nome = nome
-        self.vida_max = vida_max
-        self.vida = vida_max
-        self.força_base = força; self.força = força
-        self.defesa_base = defesa; self.defesa = defesa
-        self.velocidade = velocidade
-        self.defendendo = False; self.invulneravel = False; self.critico_garantido = False
-        self.vivo = True
+        self.nome = nome; self.vida_max = vida_max; self.vida = vida_max; self.força_base = força; self.força = força
+        self.defesa_base = defesa; self.defesa = defesa; self.velocidade = velocidade
+        self.defendendo = False; self.invulneravel = False; self.critico_garantido = False; self.vivo = True
         self.habilidade_cooldown = 0; self.ataque_debuff_turns = 0; self.defesa_buff_turns = 0
         img = pygame.image.load(f'imagens/Personagens/{self.nome}/0.png').convert_alpha()
         self.image = pygame.transform.scale(img, (int(img.get_width() / escala_img), int(img.get_height() / escala_img)))
@@ -103,44 +98,55 @@ class Personagem():
         elif self.nome == 'Nazgûl': self.nome_habilidade = 'GRITO SOMBRIO'; self.habilidade_cooldown_max = 3
         else: self.nome_habilidade = 'NENHUMA'; self.habilidade_cooldown_max = 0
     def atacar(self, alvo):
-        if alvo.invulneravel: return
-        multiplicador_critico = 2.0 if self.critico_garantido else 1.0
-        self.critico_garantido = False
+        if alvo.invulneravel: return 0, False
+        multiplicador_critico = 2.0 if self.critico_garantido else 1.0; self.critico_garantido = False
         defesa_alvo = alvo.defesa * 2 if alvo.defendendo else alvo.defesa
         dano = (self.força * (50 / (50 + defesa_alvo))) * multiplicador_critico
         alvo.vida -= dano
-        if alvo.vida < 1: alvo.vida = 0; alvo.vivo = False
+        if alvo.vida < 1:
+            alvo.vida = 0; alvo.vivo = False; return dano, True
+        return dano, False
     def defender(self): self.defendendo = True
     def usar_habilidade(self, alvos_inimigos, alvos_aliados):
+        dano_total = 0
         if self.habilidade_cooldown == 0:
             self.habilidade_cooldown = self.habilidade_cooldown_max + 1
             if self.nome == 'Gandalf':
-                for inimigo in alvos_inimigos: self.atacar_com_força(inimigo, self.força * 0.75)
+                for inimigo in alvos_inimigos:
+                    dano, _ = self.atacar_com_força(inimigo, self.força * 0.75)
+                    dano_total += dano
             elif self.nome == 'Aragorn':
                 for aliado in alvos_aliados: aliado.defesa_buff_turns = 3
             elif self.nome == 'Legolas':
                 for _ in range(3):
-                    if alvos_inimigos: self.atacar_com_força(random.choice(alvos_inimigos), self.força * 0.6)
+                    if alvos_inimigos:
+                        dano, _ = self.atacar_com_força(random.choice(alvos_inimigos), self.força * 0.6)
+                        dano_total += dano
             elif self.nome == 'Frodo':
                 self.invulneravel = True; self.critico_garantido = True
             elif self.nome == 'Sauron':
-                if alvos_aliados: self.atacar_com_força(random.choice(alvos_aliados), self.força * 1.5)
+                if alvos_aliados:
+                    dano, _ = self.atacar_com_força(random.choice(alvos_aliados), self.força * 1.5)
+                    dano_total += dano
             elif self.nome == 'Nazgûl':
                 for aliado in alvos_aliados: aliado.ataque_debuff_turns = 3
+        return dano_total
     def atacar_com_força(self, alvo, força):
-        if alvo.invulneravel: return
+        if alvo.invulneravel: return 0, False
         defesa_alvo = alvo.defesa * 2 if alvo.defendendo else alvo.defesa
         dano = (força * (50 / (50 + defesa_alvo)))
         alvo.vida -= dano
-        if alvo.vida < 1: alvo.vida = 0; alvo.vivo = False
+        if alvo.vida < 1:
+            alvo.vida = 0; alvo.vivo = False; return dano, True
+        return dano, False
     def draw(self):
         if self.vivo: tela.blit(self.image, self.rect)
 
 # --- CRIAÇÃO DOS PERSONAGENS ---
-Aragorn = Personagem(350, 430, 'Aragorn', 250, 30, 25, 12)
-Frodo = Personagem(280, 500, 'Frodo', 120, 10, 15, 20, escala_img=9)
-Legolas = Personagem(200, 430, 'Legolas', 160, 42, 15, 18)
-Gandalf = Personagem(250, 380, 'Gandalf', 200, 40, 20, 8)
+Aragorn = Personagem(350, 500, 'Aragorn', 250, 30, 25, 12)
+Gandalf = Personagem(250, 420, 'Gandalf', 200, 40, 20, 8)
+Legolas = Personagem(250, 580, 'Legolas', 160, 42, 15, 18)
+Frodo = Personagem(400, 580, 'Frodo', 120, 10, 15, 20, escala_img=9)
 Sauron = Personagem(900, 360, 'Sauron', 450, 50, 30, 10, escala_img=3)
 Nazgul1 = Personagem(1100, 300, 'Nazgûl', 180, 28, 20, 16)
 Nazgul2 = Personagem(1100, 550, 'Nazgûl', 180, 28, 20, 16)
@@ -152,11 +158,13 @@ equipe_do_jogador = []
 cursor_menu = 0
 lista_inimigos = [Sauron, Nazgul1, Nazgul2]
 lista_lutadores, lutador_atual, estado_batalha, acao_selecionada, alvo_selecionado, jogo_acabou, vitoria = [], 0, 'selecionando_acao', 0, 0, False, 0
+texto_de_acao = ""; timer_texto_de_acao = 0
 
 # --- LOOP PRINCIPAL DO JOGO ---
 rodando = True
 while rodando:
     clock.tick(FPS)
+    
     if estado_do_jogo == 'menu':
         desenha_menu()
         for event in pygame.event.get():
@@ -172,72 +180,98 @@ while rodando:
                         estado_do_jogo = 'batalha'
                         lista_lutadores = equipe_do_jogador + lista_inimigos
                         lista_lutadores.sort(key=lambda x: x.velocidade, reverse=True)
+
+    # --- LÓGICA DE BATALHA REESTRUTURADA ---
     elif estado_do_jogo == 'batalha':
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT: rodando = False
-            if event.type == pygame.KEYDOWN and lista_lutadores[lutador_atual] in equipe_do_jogador and not jogo_acabou:
-                if estado_batalha == 'selecionando_acao':
-                    if event.key == pygame.K_UP: acao_selecionada = (acao_selecionada - 1) % 3
-                    if event.key == pygame.K_DOWN: acao_selecionada = (acao_selecionada + 1) % 3
-                    if event.key == pygame.K_z:
-                        if acao_selecionada == 0:
-                            estado_batalha = 'selecionando_alvo'
-                            alvos_vivos_check = [i for i in lista_inimigos if i.vivo]
-                            if alvo_selecionado >= len(alvos_vivos_check): alvo_selecionado = 0
-                        elif acao_selecionada == 1:
-                            lista_lutadores[lutador_atual].defender(); lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
-                        elif acao_selecionada == 2 and lista_lutadores[lutador_atual].habilidade_cooldown == 0:
-                            lista_lutadores[lutador_atual].usar_habilidade([i for i in lista_inimigos if i.vivo], [h for h in equipe_do_jogador if h.vivo])
-                            lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
-                elif estado_batalha == 'selecionando_alvo':
-                    alvos_vivos = [i for i in lista_inimigos if i.vivo]
-                    if alvos_vivos:
-                        if event.key == pygame.K_UP or event.key == pygame.K_DOWN: alvo_selecionado = (alvo_selecionado + 1) % len(alvos_vivos)
-                        if event.key == pygame.K_x: estado_batalha = 'selecionando_acao'
-                        if event.key == pygame.K_z:
-                            alvo = alvos_vivos[alvo_selecionado]; lista_lutadores[lutador_atual].atacar(alvo)
-                            lutador_atual = (lutador_atual + 1) % len(lista_lutadores); estado_batalha = 'selecionando_acao'
-        
+        # 1. DESENHA TUDO PRIMEIRO
         desenha_bg(); desenha_painel()
         for personagem in equipe_do_jogador + lista_inimigos: personagem.draw()
         if estado_batalha == 'selecionando_alvo':
             alvos_vivos = [i for i in lista_inimigos if i.vivo]
             if alvos_vivos:
-                alvo = alvos_vivos[alvo_selecionado % len(alvos_vivos)]
+                if alvo_selecionado >= len(alvos_vivos): alvo_selecionado = 0
+                alvo = alvos_vivos[alvo_selecionado]
                 tela.blit(arrow_img, (alvo.rect.centerx - (arrow_img.get_width() / 2), alvo.rect.top - arrow_img.get_height()))
-        
+        if timer_texto_de_acao > 0:
+            if pygame.time.get_ticks() - timer_texto_de_acao < 2000:
+                texto_img = fonte.render(texto_de_acao, True, branco)
+                pos_x = LARGURA // 2 - texto_img.get_width() // 2
+                tela.blit(texto_img, (pos_x, ALTURA - 240))
+            else:
+                timer_texto_de_acao = 0
+        if jogo_acabou:
+            if vitoria == 1: tela.blit(vitoria_img, (LARGURA // 2 - vitoria_img.get_width() // 2, ALTURA // 2 - vitoria_img.get_height() // 2))
+            elif vitoria == -1: tela.blit(derrota_img, (LARGURA // 2 - derrota_img.get_width() // 2, ALTURA // 2 - derrota_img.get_height() // 2))
+
+        # 2. PROCESSA A LÓGICA DO TURNO ATUAL
         if not jogo_acabou:
             lutador_da_vez = lista_lutadores[lutador_atual]
-            if lutador_da_vez.vivo:
-                if 'turno_iniciado' not in locals() or turno_iniciado != lutador_atual:
+            # Lógica de início de turno (só executa uma vez)
+            if 'turno_iniciado' not in locals() or turno_iniciado != lutador_atual:
+                if lutador_da_vez.vivo:
                     lutador_da_vez.defendendo = False; lutador_da_vez.invulneravel = False
                     if lutador_da_vez.habilidade_cooldown > 0: lutador_da_vez.habilidade_cooldown -= 1
-                    if lutador_da_vez.defesa_buff_turns > 0:
-                        lutador_da_vez.defesa_buff_turns -= 1
-                        lutador_da_vez.defesa = int(lutador_da_vez.defesa_base * 1.5) if lutador_da_vez.defesa_buff_turns > 0 else lutador_da_vez.defesa_base
-                    if lutador_da_vez.ataque_debuff_turns > 0:
-                        lutador_da_vez.ataque_debuff_turns -= 1
-                        lutador_da_vez.força = int(lutador_da_vez.força_base * 0.7) if lutador_da_vez.ataque_debuff_turns > 0 else lutador_da_vez.força_base
                     turno_iniciado = lutador_atual
-
-                if lutador_da_vez not in equipe_do_jogador:
-                    pygame.display.update(); pygame.time.delay(1000)
-                    alvos_vivos = [h for h in equipe_do_jogador if h.vivo]
-                    if alvos_vivos:
-                        if lutador_da_vez.habilidade_cooldown == 0:
-                            lutador_da_vez.usar_habilidade(None, alvos_vivos)
-                        else:
-                            lutador_da_vez.atacar(random.choice(alvos_vivos))
+                else: # Pula o turno do lutador morto
                     lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
-            else:
+                    continue # Reinicia o loop para o próximo lutador
+            
+            # Se for turno do inimigo, executa a IA
+            if lutador_da_vez not in equipe_do_jogador and lutador_da_vez.vivo:
+                pygame.display.update(); pygame.time.delay(1000)
+                alvos_vivos = [h for h in equipe_do_jogador if h.vivo]
+                if alvos_vivos:
+                    if lutador_da_vez.habilidade_cooldown == 0:
+                        dano_total = lutador_da_vez.usar_habilidade(None, alvos_vivos)
+                        if dano_total > 0: texto_de_acao = f"{lutador_da_vez.nome} usou {lutador_da_vez.nome_habilidade} e causou {int(dano_total)} de dano!"
+                        else: texto_de_acao = f"{lutador_da_vez.nome} usou {lutador_da_vez.nome_habilidade}!"
+                    else:
+                        alvo = random.choice(alvos_vivos)
+                        dano_causado, alvo_foi_derrotado = lutador_da_vez.atacar(alvo)
+                        if alvo_foi_derrotado: texto_de_acao = f"{alvo.nome} foi derrotado!"
+                        else: texto_de_acao = f"{lutador_da_vez.nome} atacou {alvo.nome} e causou {int(dano_causado)} de dano!"
+                    timer_texto_de_acao = pygame.time.get_ticks()
                 lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
             
+            # Se for turno do jogador, espera por eventos
+            else:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT: rodando = False
+                    if event.type == pygame.KEYDOWN:
+                        if estado_batalha == 'selecionando_acao':
+                            if event.key == pygame.K_UP: acao_selecionada = (acao_selecionada - 1) % 3
+                            if event.key == pygame.K_DOWN: acao_selecionada = (acao_selecionada + 1) % 3
+                            if event.key == pygame.K_z:
+                                if acao_selecionada == 0: estado_batalha = 'selecionando_alvo'
+                                elif acao_selecionada == 1:
+                                    lutador_da_vez.defender()
+                                    texto_de_acao = f"{lutador_da_vez.nome} se defendeu!"; timer_texto_de_acao = pygame.time.get_ticks()
+                                    lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
+                                elif acao_selecionada == 2 and lutador_da_vez.habilidade_cooldown == 0:
+                                    dano_total = lutador_da_vez.usar_habilidade([i for i in lista_inimigos if i.vivo], [h for h in equipe_do_jogador if h.vivo])
+                                    if dano_total > 0: texto_de_acao = f"{lutador_da_vez.nome} usou {lutador_da_vez.nome_habilidade} e causou {int(dano_total)} de dano!"
+                                    else: texto_de_acao = f"{lutador_da_vez.nome} usou {lutador_da_vez.nome_habilidade}!"
+                                    timer_texto_de_acao = pygame.time.get_ticks()
+                                    lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
+                        elif estado_batalha == 'selecionando_alvo':
+                            alvos_vivos_inimigos = [i for i in lista_inimigos if i.vivo]
+                            if alvos_vivos_inimigos:
+                                if event.key == pygame.K_UP or event.key == pygame.K_DOWN: alvo_selecionado = (alvo_selecionado + 1) % len(alvos_vivos_inimigos)
+                                if event.key == pygame.K_x: estado_batalha = 'selecionando_acao'
+                                if event.key == pygame.K_z:
+                                    alvo = alvos_vivos_inimigos[alvo_selecionado]
+                                    dano_causado, alvo_foi_derrotado = lutador_da_vez.atacar(alvo)
+                                    if alvo_foi_derrotado: texto_de_acao = f"{alvo.nome} foi derrotado!"
+                                    else: texto_de_acao = f"{lutador_da_vez.nome} atacou {alvo.nome} e causou {int(dano_causado)} de dano!"
+                                    timer_texto_de_acao = pygame.time.get_ticks()
+                                    lutador_atual = (lutador_atual + 1) % len(lista_lutadores); estado_batalha = 'selecionando_acao'
+
+            # 3. Verifica Condição de Fim de Jogo
             vivos_herois = sum(1 for h in equipe_do_jogador if h.vivo); vivos_inimigos = sum(1 for i in lista_inimigos if i.vivo)
             if vivos_herois == 0: vitoria = -1; jogo_acabou = True
             elif vivos_inimigos == 0: vitoria = 1; jogo_acabou = True
-        else:
-            if vitoria == 1: tela.blit(vitoria_img, (LARGURA // 2 - vitoria_img.get_width() // 2, ALTURA // 2 - vitoria_img.get_height() // 2))
-            elif vitoria == -1: tela.blit(derrota_img, (LARGURA // 2 - derrota_img.get_width() // 2, ALTURA // 2 - derrota_img.get_height() // 2))
+        
+        else: # Se o jogo acabou, só verifica o evento de fechar
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: rodando = False
 

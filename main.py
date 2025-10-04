@@ -13,8 +13,8 @@ ALTURA = 720 + 200
 tela = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption('LOTR Battle')
 
-fonte = pygame.font.SysFont('Times New Roman', 32)
-fonte_grande = pygame.font.SysFont('Times New Roman', 72)
+fonte = pygame.font.SysFont('Times New Roman', 26)
+fonte_grande = pygame.font.SysFont('Times New Roman', 60)
 vermelho = (255, 0, 0)
 verde = (0, 255, 0)
 branco = (255, 255, 255)
@@ -39,47 +39,50 @@ def desenha_bg():
     
 def desenha_painel():
     tela.blit(painel_img, (0, ALTURA - 200))
+    # Coluna 1: Heróis
     for i, heroi in enumerate(equipe_do_jogador):
         desenha_textos(f'{heroi.nome.upper()} | VIDA: {int(heroi.vida)}/{heroi.vida_max}', fonte, verde, 100, ALTURA - 200 + 30 + (i * 50))
     
+    # Coluna 2: Turno e Ações
     lutador_da_vez = lista_lutadores[lutador_atual]
-    desenha_textos(f"TURNO DE {lutador_da_vez.nome.upper()}", fonte, branco, 450, ALTURA - 200 + 30)
+    desenha_textos(f"TURNO DE {lutador_da_vez.nome.upper()}", fonte, branco, 520, ALTURA - 200 + 30)
     if lutador_da_vez in equipe_do_jogador and estado_batalha == 'selecionando_acao':
-        x_acao, y_acao_base = 470, ALTURA - 200 + 80
-        desenha_textos('ATACAR', fonte, vermelho, x_acao, y_acao_base)
-        desenha_textos('DEFENDER', fonte, vermelho, x_acao, y_acao_base + 40)
-        if acao_selecionada == 0: tela.blit(arrow_img, (x_acao - 40, y_acao_base))
-        elif acao_selecionada == 1: tela.blit(arrow_img, (x_acao - 40, y_acao_base + 40))
+        x_acao, y_acao_base = 540, ALTURA - 200 + 80
+        desenha_textos('ATACAR', fonte, vermelho, x_acao + 40, y_acao_base)
+        desenha_textos('DEFENDER', fonte, vermelho, x_acao + 40, y_acao_base + 40)
+        y_offset_seta = 5
+        if acao_selecionada == 0: 
+            tela.blit(arrow_img, (x_acao - 40, y_acao_base + y_offset_seta))
+        elif acao_selecionada == 1: 
+            tela.blit(arrow_img, (x_acao - 40, y_acao_base + 40 + y_offset_seta))
 
+    # Coluna 3: Inimigos
     for i, inimigo in enumerate(lista_inimigos):
-        desenha_textos(f'{inimigo.nome.upper()} | VIDA: {int(inimigo.vida)}/{inimigo.vida_max}', fonte, vermelho, 800, ALTURA - 200 + 30 + (i * 50))
+        desenha_textos(f'{inimigo.nome.upper()} | VIDA: {int(inimigo.vida)}/{inimigo.vida_max}', fonte, vermelho, 900, ALTURA - 200 + 30 + (i * 50))
 
-# --- NOVA FUNÇÃO PARA DESENHAR O MENU (VERSÃO CENTRALIZADA) ---
+
 def desenha_menu():
     tela.blit(menu_bg_img, (0, 0))
-    desenha_textos('ESCOLHA SUA EQUIPE', fonte_grande, branco, LARGURA // 2 - 350, 50)
+    desenha_textos('ESCOLHA SUA EQUIPE', fonte_grande, branco, LARGURA // 2 - 350, 150)
     
-    y_pos_herois = 450 # Posição Y dos heróis ajustada
+    # --- ALTERAÇÃO APLICADA AQUI ---
+    # Posição Y dos heróis ajustada para 380 (mais para cima)
+    y_pos_herois = 380 # Era y=450
     
     # Mostra os heróis disponíveis
     for i, heroi in enumerate(personagens_disponiveis):
         x_pos = 200 + i * 250
         tela.blit(heroi.image, (x_pos, y_pos_herois))
-
-        # Lógica para centralizar o texto do nome
         texto_nome = fonte.render(heroi.nome, True, branco)
         texto_x = x_pos + (heroi.image.get_width() / 2) - (texto_nome.get_width() / 2)
         texto_y = y_pos_herois + heroi.image.get_height() + 15
         tela.blit(texto_nome, (texto_x, texto_y))
-
-        # Desenha o cursor de seleção
         if i == cursor_menu:
             pygame.draw.rect(tela, branco, (x_pos - 10, y_pos_herois - 10, heroi.image.get_width() + 20, heroi.image.get_height() + 20), 3)
 
-    # Mostra a equipe sendo montada
     desenha_textos('Equipe selecionada:', fonte, branco, 100, 750)
     for i, heroi in enumerate(equipe_do_jogador):
-        desenha_textos(heroi.nome, fonte, verde, 350 + i * 150, 750)
+        desenha_textos(heroi.nome, fonte, verde, 400 + i * 150, 750)
 
 
 class Personagem():
@@ -93,7 +96,6 @@ class Personagem():
         self.defendendo = False
         self.vivo = True
         img = pygame.image.load(f'imagens/Personagens/{self.nome}/0.png').convert_alpha()
-        # Ajustei a classe para que a escala seja um parâmetro, tornando-a mais limpa
         self.image = pygame.transform.scale(img, (int(img.get_width() / escala_img), int(img.get_height() / escala_img)))
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
@@ -111,14 +113,10 @@ class Personagem():
         self.defendendo = True
 
     def draw(self):
-        tela.blit(self.image, self.rect)
-        if not self.vivo:
-            cinza_transparente = (50, 50, 50, 150)
-            superficie_cinza = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
-            superficie_cinza.fill(cinza_transparente)
-            tela.blit(superficie_cinza, self.rect.topleft)
+        if self.vivo:
+            tela.blit(self.image, self.rect)
 
-# --- CRIAÇÃO DE TODAS AS INSTÂNCIAS DE PERSONAGENS ---
+# --- CRIAÇÃO DOS PERSONAGENS E EQUIPES ---
 Aragorn = Personagem(350, 430, 'Aragorn', 250, 30, 25, 12)
 Frodo = Personagem(280, 500, 'Frodo', 120, 10, 15, 20, escala_img=9)
 Legolas = Personagem(200, 430, 'Legolas', 160, 42, 15, 18)
@@ -133,7 +131,6 @@ personagens_disponiveis = [Aragorn, Legolas, Gandalf, Frodo]
 equipe_do_jogador = []
 cursor_menu = 0
 lista_inimigos = [Sauron, Nazgul1, Nazgul2]
-
 lista_lutadores, lutador_atual, estado_batalha, acao_selecionada, alvo_selecionado, jogo_acabou, vitoria = [], 0, 'selecionando_acao', 0, 0, False, 0
 
 # --- LOOP PRINCIPAL DO JOGO ---
@@ -166,7 +163,9 @@ while rodando:
             alvos_vivos = [i for i in lista_inimigos if i.vivo]
             if alvos_vivos:
                 alvo = alvos_vivos[alvo_selecionado % len(alvos_vivos)]
-                tela.blit(arrow_img, (alvo.rect.centerx - 45, alvo.rect.y))
+                pos_x_seta = alvo.rect.centerx - (arrow_img.get_width() / 2)
+                pos_y_seta = alvo.rect.top - arrow_img.get_height()
+                tela.blit(arrow_img, (pos_x_seta, pos_y_seta))
 
         if not jogo_acabou:
             lutador_da_vez = lista_lutadores[lutador_atual]
@@ -184,8 +183,7 @@ while rodando:
                                         alvos_vivos_check = [i for i in lista_inimigos if i.vivo]
                                         if alvo_selecionado >= len(alvos_vivos_check): alvo_selecionado = 0
                                     if acao_selecionada == 1:
-                                        lutador_da_vez.defender()
-                                        lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
+                                        lutador_da_vez.defender(); lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
                             elif estado_batalha == 'selecionando_alvo':
                                 alvos_vivos = [i for i in lista_inimigos if i.vivo]
                                 if alvos_vivos:
@@ -196,7 +194,8 @@ while rodando:
                                         lutador_da_vez.atacar(alvo)
                                         lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
                                         estado_batalha = 'selecionando_acao'
-                else:
+                else: # Turno do Inimigo
+                    pygame.display.update()
                     pygame.time.delay(1000)
                     alvos_vivos = [h for h in equipe_do_jogador if h.vivo]
                     if alvos_vivos:
@@ -208,10 +207,8 @@ while rodando:
             
             vivos_herois = sum(1 for h in equipe_do_jogador if h.vivo)
             vivos_inimigos = sum(1 for i in lista_inimigos if i.vivo)
-            if vivos_herois == 0:
-                vitoria = -1; jogo_acabou = True
-            elif vivos_inimigos == 0:
-                vitoria = 1; jogo_acabou = True
+            if vivos_herois == 0: vitoria = -1; jogo_acabou = True
+            elif vivos_inimigos == 0: vitoria = 1; jogo_acabou = True
         else:
             if vitoria == 1: tela.blit(vitoria_img, (LARGURA // 2 - vitoria_img.get_width() // 2, ALTURA // 2 - vitoria_img.get_height() // 2))
             elif vitoria == -1: tela.blit(derrota_img, (LARGURA // 2 - derrota_img.get_width() // 2, ALTURA // 2 - derrota_img.get_height() // 2))

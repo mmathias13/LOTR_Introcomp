@@ -37,7 +37,7 @@ def desenha_textos(texto, fonte, texto_cor, x, y):
 def desenha_bg():
     tela.blit(background_img, (0, 0))
     
-def desenha_painel(): # <-- FUNÇÃO MODIFICADA
+def desenha_painel():
     tela.blit(painel_img, (0, ALTURA - 200))
     # Coluna 1: Heróis
     for i, heroi in enumerate(equipe_do_jogador):
@@ -53,12 +53,11 @@ def desenha_painel(): # <-- FUNÇÃO MODIFICADA
         cor_habilidade = vermelho if lutador_da_vez.habilidade_cooldown == 0 else cinza
         desenha_textos(lutador_da_vez.nome_habilidade, fonte, cor_habilidade, x_acao, y_acao_base + 80)
         
-        # Lógica da seta de seleção de ação REFINADA NOVAMENTE
-        y_offset_final = -28 # <-- MODIFICADO: Subindo mais um pouco
+        y_offset_final = -28
         
-        if acao_selecionada == 0: tela.blit(arrow_img, (x_acao - 40, y_acao_base + y_offset_final)) # <-- MODIFICADO
-        elif acao_selecionada == 1: tela.blit(arrow_img, (x_acao - 40, y_acao_base + 40 + y_offset_final)) # <-- MODIFICADO
-        elif acao_selecionada == 2: tela.blit(arrow_img, (x_acao - 40, y_acao_base + 80 + y_offset_final)) # <-- MODIFICADO
+        if acao_selecionada == 0: tela.blit(arrow_img, (x_acao - 40, y_acao_base + y_offset_final))
+        elif acao_selecionada == 1: tela.blit(arrow_img, (x_acao - 40, y_acao_base + 40 + y_offset_final))
+        elif acao_selecionada == 2: tela.blit(arrow_img, (x_acao - 40, y_acao_base + 80 + y_offset_final))
 
     # Coluna 3: Inimigos
     for i, inimigo in enumerate(lista_inimigos):
@@ -228,7 +227,6 @@ while rodando:
 
         # 2. Gerenciador de pausa e avanço de turno
         if timer_pos_acao > 0:
-            # ... (sem alterações)
             if pygame.time.get_ticks() - timer_pos_acao > delay_pos_acao:
                 timer_pos_acao = 0
                 lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
@@ -238,7 +236,6 @@ while rodando:
         
         # 3. Processa eventos e lógica de turno
         if not jogo_acabou and not acao_em_andamento and timer_pos_acao == 0:
-            # ... (sem alterações)
             lutador_da_vez = lista_lutadores[lutador_atual]
             if lutador_da_vez.vivo:
                 if 'turno_iniciado' not in locals() or turno_iniciado != lutador_atual:
@@ -277,9 +274,9 @@ while rodando:
                                         alvo = alvos_vivos[alvo_selecionado]
                                         lutador_da_vez.iniciar_animacao_ataque(alvo)
                                         acao_em_andamento = True
-                else:
+                else: # Turno do Inimigo <-- SEÇÃO MODIFICADA
                     alvos_vivos_herois = [h for h in equipe_do_jogador if h.vivo]
-                    if alvos_vivos_herois:
+                    if alvos_vivos_herois: # Se há alvos vivos, o inimigo age
                         if lutador_da_vez.habilidade_cooldown == 0 and lutador_da_vez.nome in ['Sauron', 'Nazgûl']:
                              habilidades_com_animacao = ['Sauron']
                              if lutador_da_vez.nome in habilidades_com_animacao:
@@ -294,20 +291,26 @@ while rodando:
                             alvo = random.choice(alvos_vivos_herois)
                             lutador_da_vez.iniciar_animacao_ataque(alvo)
                             acao_em_andamento = True
+                    else: # Se NÃO há alvos vivos, o inimigo passa o turno
+                        lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
+
             else: 
                 lutador_atual = (lutador_atual + 1) % len(lista_lutadores)
 
         # 4. Gerenciador de Animação
         if acao_em_andamento:
-            # ... (sem alterações)
+            # ... (sem alterações nesta seção)
             atacante = lista_lutadores[lutador_atual]
             if atacante.estado_animacao == 'atacando':
                 duracao_total = 600
                 tempo_passado = pygame.time.get_ticks() - atacante.animation_start_time
                 if tempo_passado < duracao_total / 2: atacante.rect.centerx += 8
                 elif tempo_passado >= duracao_total / 2 and not atacante.hit_registrado:
-                    dano_causado, _ = atacante.atacar(atacante.alvo_da_animacao)
-                    texto_de_acao = f"{atacante.nome} atacou {atacante.alvo_da_animacao.nome} e causou {int(dano_causado)} de dano!"
+                    dano_causado, alvo_foi_derrotado = atacante.atacar(atacante.alvo_da_animacao)
+                    if alvo_foi_derrotado:
+                        texto_de_acao = f"{atacante.alvo_da_animacao.nome} foi derrotado!"
+                    else:
+                        texto_de_acao = f"{atacante.nome} atacou {atacante.alvo_da_animacao.nome} e causou {int(dano_causado)} de dano!"
                     timer_texto_de_acao = pygame.time.get_ticks()
                     atacante.hit_registrado = True
                 elif tempo_passado > duracao_total / 2 and tempo_passado < duracao_total: atacante.rect.centerx -= 8
@@ -319,6 +322,7 @@ while rodando:
             
             elif atacante.estado_animacao == 'animando_habilidade':
                 tempo_passado = pygame.time.get_ticks() - atacante.animation_start_time
+                
                 if atacante.nome == 'Sauron':
                     if atacante.alvo_da_animacao is None:
                          alvos_vivos = [h for h in equipe_do_jogador if h.vivo]
@@ -329,8 +333,11 @@ while rodando:
                     duracao_total = 800
                     if tempo_passado < duracao_total / 2: atacante.rect.centerx -= 8
                     elif tempo_passado >= duracao_total / 2 and not atacante.hit_registrado:
-                        dano, _ = atacante.atacar_com_força(atacante.alvo_da_animacao, atacante.força * 1.5)
-                        texto_de_acao = f"O OLHO DE SAURON causou {int(dano)} de dano em {atacante.alvo_da_animacao.nome}!"
+                        dano, alvo_foi_derrotado = atacante.atacar_com_força(atacante.alvo_da_animacao, atacante.força * 1.5)
+                        if alvo_foi_derrotado:
+                            texto_de_acao = f"{atacante.alvo_da_animacao.nome} foi derrotado!"
+                        else:
+                            texto_de_acao = f"O OLHO DE SAURON causou {int(dano)} de dano em {atacante.alvo_da_animacao.nome}!"
                         timer_texto_de_acao = pygame.time.get_ticks(); atacante.hit_registrado = True
                     elif tempo_passado > duracao_total / 2 and tempo_passado < duracao_total: atacante.rect.centerx += 8
                     else:
@@ -343,10 +350,20 @@ while rodando:
                     elif tempo_passado >= 400 and not atacante.hit_registrado:
                         alvos_vivos = [i for i in lista_inimigos if i.vivo]
                         dano_total = 0
+                        inimigos_derrotados = []
                         for inimigo in alvos_vivos:
-                            dano, _ = atacante.atacar_com_força(inimigo, atacante.força * 0.75)
+                            dano, foi_derrotado = atacante.atacar_com_força(inimigo, atacante.força * 0.75)
+                            if foi_derrotado:
+                                inimigos_derrotados.append(inimigo.nome)
                             dano_total += dano
-                        texto_de_acao = f"A LUZ DE ISTARI causou {int(dano_total)} de dano total!"
+                        
+                        if len(inimigos_derrotados) == 1:
+                            texto_de_acao = f"{inimigos_derrotados[0]} foi derrotado!"
+                        elif len(inimigos_derrotados) > 1:
+                            texto_de_acao = "Vários inimigos foram derrotados!"
+                        else:
+                            texto_de_acao = f"A LUZ DE ISTARI causou {int(dano_total)} de dano total!"
+                            
                         timer_texto_de_acao = pygame.time.get_ticks(); atacante.hit_registrado = True
                     elif tempo_passado > 800 and tempo_passado < duracao_total:
                         atacante.rect.centerx -= 3
@@ -365,9 +382,15 @@ while rodando:
                     else:
                         if tempo_passado // duracao_hit > atacante.habilidade_hits_feitos -1:
                             alvo = random.choice(alvos_vivos)
-                            dano, _ = atacante.atacar_com_força(alvo, atacante.força * 0.6)
+                            dano, alvo_foi_derrotado = atacante.atacar_com_força(alvo, atacante.força * 0.6)
                             atacante.dano_total_habilidade += dano
                             atacante.habilidade_hits_feitos += 1
+                            if alvo_foi_derrotado:
+                                texto_de_acao = f"{alvo.nome} foi derrotado!"
+                            else:
+                                texto_de_acao = f"Flecha causou {int(dano)} de dano em {alvo.nome}!"
+                            timer_texto_de_acao = pygame.time.get_ticks()
+
                         tempo_no_hit_atual = tempo_passado % duracao_hit
                         if tempo_no_hit_atual < duracao_hit / 2:
                             atacante.rect.centerx += 2
